@@ -4,6 +4,9 @@
   "author": "Akinur Rahman",
   "license": "MIT",
   "packageManager": "pnpm@10.18.0",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
