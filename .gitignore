@@ -1,0 +1,25 @@
+# dependencies
+node_modules
+
+# build output
+dist
+build
+
+# turbo cache
+.turbo
+
+# env files (keep the example)
+.env
+.env.*
+!.env.example
+
+# tests
+coverage
+
+# logs
+*.log
+
+# OS and editor
+.DS_Store
+Thumbs.db
+.idea
