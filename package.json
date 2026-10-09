@@ -17,5 +17,12 @@
   },
   "devDependencies": {
     "turbo": "^2.11.7"
+  },
+  "pnpm": {
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "nestjs-zod>@nestjs/common": "12"
+      }
+    }
   }
 }
