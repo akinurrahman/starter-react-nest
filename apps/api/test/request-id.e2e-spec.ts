@@ -20,14 +20,14 @@ describe('Request ID (e2e)', () => {
   });
 
   it('generates a UUID when none is sent', async () => {
-    const res = await request(app.getHttpServer()).get('/').expect(200);
+    const res = await request(app.getHttpServer()).get('/health').expect(200);
 
     expect(res.headers['x-request-id']).toMatch(UUID);
   });
 
   it('echoes a valid incoming ID unchanged', async () => {
     const res = await request(app.getHttpServer())
-      .get('/')
+      .get('/health')
       .set('x-request-id', 'abc_DEF-123')
       .expect(200);
 
@@ -36,7 +36,7 @@ describe('Request ID (e2e)', () => {
 
   it('replaces an ID containing spaces', async () => {
     const res = await request(app.getHttpServer())
-      .get('/')
+      .get('/health')
       .set('x-request-id', 'has spaces')
       .expect(200);
 
@@ -45,7 +45,7 @@ describe('Request ID (e2e)', () => {
 
   it('replaces an ID longer than 64 characters', async () => {
     const res = await request(app.getHttpServer())
-      .get('/')
+      .get('/health')
       .set('x-request-id', 'a'.repeat(65))
       .expect(200);
 
@@ -55,7 +55,7 @@ describe('Request ID (e2e)', () => {
   it('accepts an ID of exactly 64 characters', async () => {
     const id = 'a'.repeat(64);
     const res = await request(app.getHttpServer())
-      .get('/')
+      .get('/health')
       .set('x-request-id', id)
       .expect(200);
 
