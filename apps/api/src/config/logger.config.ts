@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { fileURLToPath } from 'node:url';
 import type { Params } from 'nestjs-pino';
 import type { LoggerOptions } from 'pino';
 import type { Options } from 'pino-http';
@@ -10,6 +11,11 @@ export type LoggerEnv = Pick<Env, 'NODE_ENV' | 'LOG_LEVEL'>;
 export const REQUEST_ID_HEADER = 'x-request-id';
 
 const VALID_REQUEST_ID = /^[A-Za-z0-9_-]{1,64}$/;
+
+// Resolved next to this file, so it points at the compiled .js under dist.
+const PRETTY_TRANSPORT = fileURLToPath(
+  new URL('./pretty-transport.js', import.meta.url),
+);
 
 export const REDACT_PATHS = [
   'req.headers.authorization',
@@ -27,7 +33,7 @@ export function createPinoOptions(env: LoggerEnv): LoggerOptions {
     level: env.LOG_LEVEL,
     redact: { paths: REDACT_PATHS, censor: '[REDACTED]' },
     ...(env.NODE_ENV === 'development' && {
-      transport: { target: 'pino-pretty' },
+      transport: { target: PRETTY_TRANSPORT },
     }),
   };
 }
