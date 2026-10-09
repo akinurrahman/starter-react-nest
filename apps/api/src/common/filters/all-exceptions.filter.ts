@@ -41,13 +41,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const body = toErrorResponse(exception);
 
-    if (body.statusCode >= 500) {
-      if (exception instanceof Error) {
-        this.logger.error(exception.message, exception.stack);
-      } else {
-        this.logger.error(exception);
-      }
-    }
+    // Passing the Error itself (not message + stack) lets pino serialize it,
+    // including any `cause` chain.
+    if (body.statusCode >= 500) this.logger.error(exception);
 
     host
       .switchToHttp()

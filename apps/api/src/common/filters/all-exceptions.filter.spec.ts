@@ -1,6 +1,10 @@
+import { type ArgumentsHost, Logger } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client.js';
 import { ServiceUnavailableError } from '../errors/index.js';
-import { toErrorResponse } from './all-exceptions.filter.js';
+import {
+  AllExceptionsFilter,
+  toErrorResponse,
+} from './all-exceptions.filter.js';
 
 function prismaError(code: string) {
   return new Prisma.PrismaClientKnownRequestError('internal prisma detail', {
@@ -43,6 +47,10 @@ describe('AllExceptionsFilter (ServiceUnavailableError)', () => {
     message: 'Service unavailable',
   };
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('passes 503 through instead of INTERNAL_ERROR, without the cause', () => {
     const error = new ServiceUnavailableError(undefined, undefined, {
       cause: new Error('connect ECONNREFUSED'),
@@ -52,5 +60,26 @@ describe('AllExceptionsFilter (ServiceUnavailableError)', () => {
 
     expect(body).toEqual(SERVICE_UNAVAILABLE);
     expect(JSON.stringify(body)).not.toContain('ECONNREFUSED');
+  });
+
+  it('logs the error with its cause attached', () => {
+    const logError = vi
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => {});
+    const json = vi.fn();
+    const status = vi.fn(() => ({ json }));
+    const host = {
+      switchToHttp: () => ({ getResponse: () => ({ status }) }),
+    } as unknown as ArgumentsHost;
+    const cause = new Error('connect ECONNREFUSED');
+    const error = new ServiceUnavailableError(undefined, undefined, { cause });
+
+    new AllExceptionsFilter().catch(error, host);
+
+    expect(status).toHaveBeenCalledWith(503);
+    expect(json).toHaveBeenCalledWith(SERVICE_UNAVAILABLE);
+    expect(logError).toHaveBeenCalledTimes(1);
+    expect(logError).toHaveBeenCalledWith(error);
+    expect(error.cause).toBe(cause);
   });
 });
