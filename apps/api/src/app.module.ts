@@ -10,6 +10,7 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor.
 import { validateEnv, type Env } from './config/env.schema.js';
 import { createLoggerParams } from './config/logger.config.js';
 import { PrismaModule } from './database/prisma.module.js';
+import { HealthModule } from './health/health.module.js';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { PrismaModule } from './database/prisma.module.js';
         }),
     }),
     PrismaModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [
