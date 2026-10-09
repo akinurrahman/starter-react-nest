@@ -42,16 +42,28 @@ describe('Global validation (e2e)', () => {
       .expect({ name: 'Ada', email: 'ada@example.com' });
   });
 
-  it('rejects invalid input with the failing fields', async () => {
-    const res = await request(app.getHttpServer())
+  it('rejects invalid input with the failing fields', () => {
+    return request(app.getHttpServer())
       .post('/validation-test')
       .send({ name: 'A', email: 'not-an-email' })
-      .expect(400);
-
-    const paths = (res.body.errors as { path: string[] }[]).map((e) =>
-      e.path.join('.'),
-    );
-    expect(paths).toEqual(expect.arrayContaining(['name', 'email']));
+      .expect(400)
+      .expect({
+        statusCode: 400,
+        code: 'VALIDATION_FAILED',
+        message: 'Validation failed',
+        errors: [
+          {
+            path: 'name',
+            message: 'Too small: expected string to have >=2 characters',
+            code: 'too_small',
+          },
+          {
+            path: 'email',
+            message: 'Invalid email address',
+            code: 'invalid_format',
+          },
+        ],
+      });
   });
 
   it('strips unknown fields from the body', () => {
