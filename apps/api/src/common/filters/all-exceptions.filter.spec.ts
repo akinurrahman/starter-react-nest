@@ -1,4 +1,5 @@
 import { Prisma } from '../../generated/prisma/client.js';
+import { ServiceUnavailableError } from '../errors/index.js';
 import { toErrorResponse } from './all-exceptions.filter.js';
 
 function prismaError(code: string) {
@@ -32,5 +33,24 @@ describe('toErrorResponse (Prisma)', () => {
       code: 'INTERNAL_ERROR',
       message: 'Internal server error',
     });
+  });
+});
+
+describe('AllExceptionsFilter (ServiceUnavailableError)', () => {
+  const SERVICE_UNAVAILABLE = {
+    statusCode: 503,
+    code: 'SERVICE_UNAVAILABLE',
+    message: 'Service unavailable',
+  };
+
+  it('passes 503 through instead of INTERNAL_ERROR, without the cause', () => {
+    const error = new ServiceUnavailableError(undefined, undefined, {
+      cause: new Error('connect ECONNREFUSED'),
+    });
+
+    const body = toErrorResponse(error);
+
+    expect(body).toEqual(SERVICE_UNAVAILABLE);
+    expect(JSON.stringify(body)).not.toContain('ECONNREFUSED');
   });
 });

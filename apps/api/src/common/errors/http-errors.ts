@@ -29,3 +29,14 @@ export class ConflictError extends AppError {
     super(409, code, message);
   }
 }
+
+// `cause` is logged by AllExceptionsFilter but never sent to the client.
+export class ServiceUnavailableError extends AppError {
+  constructor(
+    code = 'SERVICE_UNAVAILABLE',
+    message = 'Service unavailable',
+    options?: ErrorOptions,
+  ) {
+    super(503, code, message, undefined, options);
+  }
+}

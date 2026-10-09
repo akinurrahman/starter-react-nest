@@ -6,8 +6,9 @@ export class AppError extends Error {
     readonly code: string,
     message: string,
     readonly errors?: FieldError[],
+    options?: ErrorOptions,
   ) {
-    super(message);
+    super(message, options);
     this.name = new.target.name;
   }
 }
