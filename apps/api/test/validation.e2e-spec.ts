@@ -39,7 +39,7 @@ describe('Global validation (e2e)', () => {
       .post('/validation-test')
       .send({ name: 'Ada', email: 'ada@example.com' })
       .expect(201)
-      .expect({ name: 'Ada', email: 'ada@example.com' });
+      .expect({ data: { name: 'Ada', email: 'ada@example.com' } });
   });
 
   it('rejects invalid input with the failing fields', () => {
@@ -71,7 +71,7 @@ describe('Global validation (e2e)', () => {
       .post('/validation-test')
       .send({ name: 'Ada', email: 'ada@example.com', isAdmin: true })
       .expect(201)
-      .expect({ name: 'Ada', email: 'ada@example.com' });
+      .expect({ data: { name: 'Ada', email: 'ada@example.com' } });
   });
 
   afterEach(async () => {
