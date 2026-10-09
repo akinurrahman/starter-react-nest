@@ -1,11 +1,4 @@
-export interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-  hasPrevious: boolean;
-  hasNext: boolean;
-}
+import type { Pagination } from './pagination-meta.js';
 
 export class PaginatedResult<T, S = undefined> {
   constructor(

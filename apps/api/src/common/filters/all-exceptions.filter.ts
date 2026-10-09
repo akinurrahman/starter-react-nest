@@ -17,17 +17,10 @@ import {
   ForbiddenError,
   NotFoundError,
   UnauthorizedError,
-  type FieldError,
+  type ErrorResponse,
 } from '../errors/index.js';
 
-export interface ErrorResponseBody {
-  statusCode: number;
-  code: string;
-  message: string;
-  errors?: FieldError[];
-}
-
-const INTERNAL_ERROR: ErrorResponseBody = {
+const INTERNAL_ERROR: ErrorResponse = {
   statusCode: 500,
   code: 'INTERNAL_ERROR',
   message: 'Internal server error',
@@ -64,7 +57,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
   }
 }
 
-export function toErrorResponse(exception: unknown): ErrorResponseBody {
+export function toErrorResponse(exception: unknown): ErrorResponse {
   if (exception instanceof AppError) {
     return {
       statusCode: exception.statusCode,

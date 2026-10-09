@@ -1,8 +1,4 @@
-export interface FieldError {
-  path: string;
-  message: string;
-  code: string;
-}
+import type { FieldError } from './error-response.js';
 
 export class AppError extends Error {
   constructor(
