@@ -18,6 +18,7 @@
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "postinstall": "prisma generate --no-hints",
+    "db:generate": "prisma generate --no-hints",
     "db:migrate": "prisma migrate dev && prisma generate --no-hints",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio"
