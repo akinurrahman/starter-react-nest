@@ -44,9 +44,17 @@ export function resolveRequestId(incoming: unknown): string {
     : randomUUID();
 }
 
+// Probes hit these every few seconds; logging each one would drown real traffic.
+const UNLOGGED_PATHS = new Set(['/health', '/health/ready']);
+
+export function isUnloggedRequest(url: string | undefined): boolean {
+  return url !== undefined && UNLOGGED_PATHS.has(url.split('?', 1)[0]);
+}
+
 export function createPinoHttpOptions(env: LoggerEnv): Options {
   return {
     ...createPinoOptions(env),
+    autoLogging: { ignore: (req) => isUnloggedRequest(req.url) },
     genReqId: (req: IncomingMessage, res: ServerResponse) => {
       const id = resolveRequestId(req.headers[REQUEST_ID_HEADER]);
       res.setHeader(REQUEST_ID_HEADER, id);
