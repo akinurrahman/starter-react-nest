@@ -66,7 +66,7 @@ pnpm --filter @starter/api db:deploy
 pnpm dev
 ```
 
-That's it. The API is running at **http://localhost:3000**.
+That's it. The API is running at **http://localhost:8000**.
 
 <details>
 <summary><b>Port 5432 already in use?</b></summary>
