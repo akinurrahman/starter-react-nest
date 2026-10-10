@@ -6,6 +6,8 @@ import request from 'supertest';
 import { RATE_LIMIT } from './../src/config/throttler.config.js';
 
 const TEST_LIMIT = 2;
+const DOCS_USER = 'docs';
+const DOCS_PASSWORD = 'correct horse battery staple';
 
 @Controller('throttle-test')
 class ThrottleTestController {
@@ -21,7 +23,9 @@ async function createApp(
   env: Record<string, string | undefined> = {},
 ): Promise<NestExpressApplication> {
   vi.resetModules();
-  vi.stubEnv('TRUST_PROXY', undefined);
+  for (const key of ['TRUST_PROXY', 'SWAGGER_USER', 'SWAGGER_PASSWORD']) {
+    vi.stubEnv(key, undefined);
+  }
   for (const [key, value] of Object.entries(env)) vi.stubEnv(key, value);
 
   const { AppModule } = await import('./../src/app.module.js');
@@ -41,6 +45,10 @@ async function createApp(
   setupSwagger(app);
   await app.init();
   return app;
+}
+
+function basic(user: string, password: string): string {
+  return `Basic ${Buffer.from(`${user}:${password}`).toString('base64')}`;
 }
 
 describe('Rate limiting (e2e)', () => {
@@ -132,5 +140,67 @@ describe('TRUST_PROXY (e2e)', () => {
       .get('/api/throttle-test')
       .set('X-Forwarded-For', '203.0.113.2')
       .expect(429);
+  });
+});
+
+describe('Docs basic auth (e2e)', () => {
+  let app: NestExpressApplication;
+
+  beforeAll(async () => {
+    app = await createApp({
+      SWAGGER_ENABLED: 'true',
+      SWAGGER_USER: DOCS_USER,
+      SWAGGER_PASSWORD: DOCS_PASSWORD,
+    });
+  });
+
+  afterAll(async () => {
+    await app.close();
+    vi.unstubAllEnvs();
+  });
+
+  const PATHS = [
+    '/docs',
+    '/docs-json',
+    '/docs-yaml',
+    '/docs/swagger-ui-init.js',
+  ];
+
+  it.each(PATHS)('rejects %s without credentials', async (path) => {
+    await request(app.getHttpServer())
+      .get(path)
+      .expect(401)
+      .expect('WWW-Authenticate', 'Basic realm="API docs", charset="UTF-8"')
+      .expect({
+        statusCode: 401,
+        code: 'UNAUTHORIZED',
+        message: 'Authentication required',
+      });
+  });
+
+  it.each([
+    ['a wrong password', basic(DOCS_USER, 'wrong')],
+    ['a wrong user', basic('admin', DOCS_PASSWORD)],
+    ['the password as user', basic(DOCS_PASSWORD, DOCS_USER)],
+    ['another scheme', `Bearer ${DOCS_PASSWORD}`],
+    ['malformed base64', 'Basic !!!'],
+  ])('rejects %s', async (_, authorization) => {
+    await request(app.getHttpServer())
+      .get('/docs-json')
+      .set('Authorization', authorization)
+      .expect(401)
+      .expect('WWW-Authenticate', /^Basic /);
+  });
+
+  it.each(PATHS)('serves %s with the right credentials', async (path) => {
+    await request(app.getHttpServer())
+      .get(path)
+      .set('Authorization', basic(DOCS_USER, DOCS_PASSWORD))
+      .expect(200);
+  });
+
+  it('leaves the API itself alone', async () => {
+    await request(app.getHttpServer()).get('/api/throttle-test').expect(200);
+    await request(app.getHttpServer()).get('/health').expect(200);
   });
 });

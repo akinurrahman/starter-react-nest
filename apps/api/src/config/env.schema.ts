@@ -49,6 +49,8 @@ export const envSchema = z
       .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
       .default('info'),
     SWAGGER_ENABLED: z.stringbool().optional(),
+    SWAGGER_USER: z.string().min(1).optional(),
+    SWAGGER_PASSWORD: z.string().min(1).optional(),
     CORS_ORIGINS: corsOrigins.optional(),
     // Number of reverse proxies in front of the app; unset trusts none, so
     // X-Forwarded-For is ignored.
@@ -63,7 +65,27 @@ export const envSchema = z
     ...env,
     SWAGGER_ENABLED: env.SWAGGER_ENABLED ?? env.NODE_ENV !== 'production',
     CORS_ORIGINS: env.CORS_ORIGINS ?? DEFAULT_CORS_ORIGINS,
-  }));
+  }))
+  // Runs on the resolved SWAGGER_ENABLED. Setting only one credential would
+  // silently leave the docs open, so it is an error too.
+  .superRefine((env, ctx) => {
+    const required =
+      (env.NODE_ENV === 'production' && env.SWAGGER_ENABLED) ||
+      env.SWAGGER_USER !== undefined ||
+      env.SWAGGER_PASSWORD !== undefined;
+    if (!required) return;
+
+    for (const key of ['SWAGGER_USER', 'SWAGGER_PASSWORD'] as const) {
+      if (env[key] === undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          path: [key],
+          message:
+            'Required when the other Swagger credential is set, or when Swagger is enabled in production',
+        });
+      }
+    }
+  });
 
 export type Env = z.infer<typeof envSchema>;
 

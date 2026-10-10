@@ -97,3 +97,48 @@ describe('TRUST_PROXY', () => {
     expect(parse({ TRUST_PROXY: value }).success).toBe(false);
   });
 });
+
+describe('SWAGGER_USER / SWAGGER_PASSWORD', () => {
+  const PROD = { NODE_ENV: 'production', CORS_ORIGINS: 'https://app.example' };
+  const CREDENTIALS = { SWAGGER_USER: 'docs', SWAGGER_PASSWORD: 'secret' };
+
+  function issuePaths(env: Record<string, string>) {
+    const result = envSchema.safeParse({ ...base, ...env });
+    return result.error?.issues.map((issue) => issue.path.join('.')) ?? [];
+  }
+
+  it('are optional outside production', () => {
+    expect(issuePaths({ NODE_ENV: 'development' })).toEqual([]);
+  });
+
+  it('are not needed in production while the docs are off', () => {
+    expect(issuePaths(PROD)).toEqual([]);
+    expect(issuePaths({ ...PROD, SWAGGER_ENABLED: 'false' })).toEqual([]);
+  });
+
+  it('are both required when the docs are on in production', () => {
+    expect(issuePaths({ ...PROD, SWAGGER_ENABLED: 'true' })).toEqual([
+      'SWAGGER_USER',
+      'SWAGGER_PASSWORD',
+    ]);
+  });
+
+  it('are accepted when the docs are on in production', () => {
+    expect(
+      issuePaths({ ...PROD, SWAGGER_ENABLED: 'true', ...CREDENTIALS }),
+    ).toEqual([]);
+  });
+
+  it('must be set together', () => {
+    expect(issuePaths({ SWAGGER_USER: 'docs' })).toEqual(['SWAGGER_PASSWORD']);
+    expect(issuePaths({ SWAGGER_PASSWORD: 'secret' })).toEqual([
+      'SWAGGER_USER',
+    ]);
+  });
+
+  it('rejects empty values', () => {
+    expect(
+      issuePaths({ SWAGGER_USER: '', SWAGGER_PASSWORD: 'secret' }),
+    ).toContain('SWAGGER_USER');
+  });
+});
