@@ -72,3 +72,28 @@ describe('CORS_ORIGINS', () => {
     expect(corsIssue({ CORS_ORIGINS: value })).toBeDefined();
   });
 });
+
+describe('TRUST_PROXY', () => {
+  function parse(env: Record<string, string>) {
+    return envSchema.safeParse({ ...base, ...env });
+  }
+
+  it('is off by default', () => {
+    expect(parse({}).data?.TRUST_PROXY).toBeUndefined();
+  });
+
+  it('parses a hop count', () => {
+    expect(parse({ TRUST_PROXY: '2' }).data?.TRUST_PROXY).toBe(2);
+  });
+
+  it.each([
+    ['zero', '0'],
+    ['empty', ''],
+    ['negative', '-1'],
+    ['a fraction', '1.5'],
+    ['a boolean', 'true'],
+    ['an address', '10.0.0.0/8'],
+  ])('rejects %s', (_, value) => {
+    expect(parse({ TRUST_PROXY: value }).success).toBe(false);
+  });
+});

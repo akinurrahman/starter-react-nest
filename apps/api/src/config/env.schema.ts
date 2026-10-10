@@ -50,6 +50,9 @@ export const envSchema = z
       .default('info'),
     SWAGGER_ENABLED: z.stringbool().optional(),
     CORS_ORIGINS: corsOrigins.optional(),
+    // Number of reverse proxies in front of the app; unset trusts none, so
+    // X-Forwarded-For is ignored.
+    TRUST_PROXY: z.coerce.number().int().min(1).optional(),
   })
   .refine(
     (env) => env.NODE_ENV !== 'production' || env.CORS_ORIGINS !== undefined,

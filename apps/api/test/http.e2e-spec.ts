@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { Controller, Get, INestApplication } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
-import { App } from 'supertest/types.js';
 import { AppModule } from './../src/app.module.js';
 import { DEFAULT_CORS_ORIGINS } from './../src/config/env.schema.js';
 import { configureHttp } from './../src/config/http.config.js';
@@ -23,7 +23,7 @@ class PrefixTestController {
 }
 
 describe('HTTP setup (e2e)', () => {
-  let app: INestApplication<App>;
+  let app: NestExpressApplication;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -31,7 +31,7 @@ describe('HTTP setup (e2e)', () => {
       controllers: [PrefixTestController],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication<NestExpressApplication>();
     // Same order as main.ts.
     configureHttp(app);
     setupSwagger(app);

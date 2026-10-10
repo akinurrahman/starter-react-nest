@@ -21,6 +21,7 @@ async function createApp(
   env: Record<string, string | undefined> = {},
 ): Promise<NestExpressApplication> {
   vi.resetModules();
+  vi.stubEnv('TRUST_PROXY', undefined);
   for (const [key, value] of Object.entries(env)) vi.stubEnv(key, value);
 
   const { AppModule } = await import('./../src/app.module.js');
@@ -88,5 +89,48 @@ describe('Rate limiting (e2e)', () => {
       const res = await request(app.getHttpServer()).get(path).expect(200);
       expect(res.headers).not.toHaveProperty('x-ratelimit-limit');
     }
+  });
+});
+
+describe('TRUST_PROXY (e2e)', () => {
+  let app: NestExpressApplication | undefined;
+
+  afterEach(async () => {
+    await app?.close();
+    vi.unstubAllEnvs();
+  });
+
+  async function exhaust(clientIp: string) {
+    for (let i = 0; i < TEST_LIMIT; i++) {
+      await request(app!.getHttpServer())
+        .get('/api/throttle-test')
+        .set('X-Forwarded-For', clientIp)
+        .expect(200);
+    }
+  }
+
+  it('throttles each forwarded client separately when set', async () => {
+    app = await createApp({ TRUST_PROXY: '1' });
+    await exhaust('203.0.113.1');
+
+    await request(app.getHttpServer())
+      .get('/api/throttle-test')
+      .set('X-Forwarded-For', '203.0.113.1')
+      .expect(429);
+    await request(app.getHttpServer())
+      .get('/api/throttle-test')
+      .set('X-Forwarded-For', '203.0.113.2')
+      .expect(200);
+  });
+
+  it('ignores X-Forwarded-For when unset', async () => {
+    app = await createApp();
+    await exhaust('203.0.113.1');
+
+    // A spoofed header does not get the client a fresh budget.
+    await request(app.getHttpServer())
+      .get('/api/throttle-test')
+      .set('X-Forwarded-For', '203.0.113.2')
+      .expect(429);
   });
 });
