@@ -137,7 +137,7 @@ describe('createLookup types', () => {
   it('only allows known badge variants', () => {
     createLookup({
       // @ts-expect-error not a BadgeVariant
-      active: { label: 'Active', badgeVariant: 'settled' },
+      active: { label: 'Active', badgeVariant: 'sparkly' },
     });
   });
 });
