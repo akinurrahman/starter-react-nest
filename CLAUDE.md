@@ -12,6 +12,10 @@ Node 24, pnpm 10.18, Turborepo 2.11, TypeScript 6, NestJS 12 (ESM), Prisma 7.10 
   or the installed docs before changing Prisma code or config. Don't upgrade Prisma to 8.
 - All deps are pinned exact (`save-exact=true`). New deps: pin exact, check peer ranges
   against Nest 12, ask before adding a `peerDependencyRules` override.
+- pnpm enforces a 14-day minimum release age for every package, transitive deps
+  included (`minimumReleaseAge` in `pnpm-workspace.yaml`). If an install fails
+  because a version is too new, pick an older version. Never add
+  `minimumReleaseAgeExclude` entries or lower the setting without asking.
 - Temporary: the nestjs-zod overrides (`@nestjs/common`, `@nestjs/swagger`) in the root
   package.json go once nestjs-zod declares Nest 12.
 

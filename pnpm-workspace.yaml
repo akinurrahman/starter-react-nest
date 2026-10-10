@@ -5,3 +5,6 @@ packages:
 onlyBuiltDependencies:
   - '@prisma/engines'
   - prisma
+
+# In minutes (14 days). Applies to every resolution, transitive deps included.
+minimumReleaseAge: 20160
