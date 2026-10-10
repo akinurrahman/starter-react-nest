@@ -1,4 +1,16 @@
-import { paginationMetaSchema, paginationQuerySchema } from './pagination.js';
+import {
+  DEFAULT_PAGE_LIMIT,
+  MAX_PAGE_LIMIT,
+  paginationMetaSchema,
+  paginationQuerySchema,
+} from './pagination.js';
+
+describe('page limits', () => {
+  it('are 20 by default and 100 at most', () => {
+    expect(DEFAULT_PAGE_LIMIT).toBe(20);
+    expect(MAX_PAGE_LIMIT).toBe(100);
+  });
+});
 
 describe('paginationQuerySchema', () => {
   it('defaults page to 1 and limit to 20', () => {
