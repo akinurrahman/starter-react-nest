@@ -12,6 +12,9 @@ export class PrismaService
   constructor(config: ConfigService<Env, true>) {
     const adapter = new PrismaPg({
       connectionString: config.get('DATABASE_URL', { infer: true }),
+      // Without it, opening a connection to an unresponsive database waits
+      // forever: boot hangs silently and pool slots stay taken.
+      connectionTimeoutMillis: 5000,
     });
     super({ adapter });
   }
