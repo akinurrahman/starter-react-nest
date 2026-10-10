@@ -40,6 +40,33 @@ describe('todayCalendarDate', () => {
   });
 });
 
+describe('parseCalendarDate', () => {
+  it('is local midnight of that day in every zone', async () => {
+    for (const zone of ZONES) {
+      const { parseCalendarDate, calendarDateOf } = await inZone(zone);
+      const date = parseCalendarDate('2026-11-08');
+
+      expect(date?.getHours()).toBe(0);
+      expect(date?.getDate()).toBe(8);
+      expect(calendarDateOf(date!)).toBe('2026-11-08');
+    }
+  });
+
+  it.each([
+    null,
+    undefined,
+    '',
+    '2026-02-30',
+    '2026-13-01',
+    '2026-11-08T00:00:00.000Z',
+    '8 Nov 2026',
+  ])('is undefined for %o', async (value) => {
+    const { parseCalendarDate } = await inZone('UTC');
+
+    expect(parseCalendarDate(value)).toBeUndefined();
+  });
+});
+
 describe('shiftCalendarDate', () => {
   it.each([
     ['2026-10-10', 1, '2026-10-11'],

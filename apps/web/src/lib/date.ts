@@ -30,7 +30,22 @@ export function toCalendarDate(value: string | null | undefined): string {
 // toISOString().slice(0, 10) would answer in UTC, which is still yesterday
 // in India until 05:30.
 export function todayCalendarDate(): string {
-  return format(new Date(), 'yyyy-MM-dd');
+  return calendarDateOf(new Date());
+}
+
+// Date pickers hand back local midnight, so the local day is the value.
+export function calendarDateOf(date: Date): string {
+  return format(date, 'yyyy-MM-dd');
+}
+
+// Local midnight, the shape date pickers work in. Anything but a real
+// yyyy-MM-dd day is undefined, so 2026-02-30 never rolls into March.
+export function parseCalendarDate(
+  value: string | null | undefined,
+): Date | undefined {
+  if (!value || !CALENDAR_DATE.test(value)) return undefined;
+  const date = parseISO(value);
+  return isValid(date) ? date : undefined;
 }
 
 export function shiftCalendarDate(date: string, days: number): string {
