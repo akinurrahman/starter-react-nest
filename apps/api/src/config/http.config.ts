@@ -1,8 +1,9 @@
 import { ConfigService } from '@nestjs/config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
+import type { HttpLogger } from 'pino-http';
 import type { Env } from './env.schema.js';
-import { REQUEST_ID_HEADER } from './logger.config.js';
+import { HTTP_LOGGER, REQUEST_ID_HEADER } from './logger.config.js';
 
 export const API_PREFIX = 'api';
 
@@ -11,8 +12,12 @@ export const API_PREFIX = 'api';
 export const UNPREFIXED_PATHS = ['health', 'health/ready'];
 
 // Must run before setupSwagger: the prefix ends up in the documented paths,
-// and helmet must be registered ahead of the docs routes.
+// and the logger and helmet must be registered ahead of the docs routes.
 export function configureHttp(app: NestExpressApplication): void {
+  // First, so every response is logged and carries a request ID, including
+  // errors thrown by body parsing, which runs before Nest's own middleware.
+  app.use(app.get<HttpLogger>(HTTP_LOGGER));
+
   const config = app.get(ConfigService<Env, true>);
   const allowedOrigins = new Set(config.get('CORS_ORIGINS', { infer: true }));
 

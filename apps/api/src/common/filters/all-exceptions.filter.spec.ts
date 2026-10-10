@@ -1,5 +1,7 @@
+import { Writable } from 'node:stream';
 import { type ArgumentsHost, Logger } from '@nestjs/common';
 import { ThrottlerException } from '@nestjs/throttler';
+import { createHttpLogger } from '../../config/logger.config.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import { ServiceUnavailableError } from '../errors/index.js';
 import {
@@ -83,11 +85,7 @@ describe('AllExceptionsFilter (ServiceUnavailableError)', () => {
     const logError = vi
       .spyOn(Logger.prototype, 'error')
       .mockImplementation(() => {});
-    const json = vi.fn();
-    const status = vi.fn(() => ({ json }));
-    const host = {
-      switchToHttp: () => ({ getResponse: () => ({ status }) }),
-    } as unknown as ArgumentsHost;
+    const { host, status, json } = httpHost({});
     const cause = new Error('connect ECONNREFUSED');
     const error = new ServiceUnavailableError(undefined, undefined, { cause });
 
@@ -130,3 +128,42 @@ describe('toErrorResponse (http-errors from Express middleware)', () => {
     expect(toErrorResponse(httpError(502, true))).toEqual(INTERNAL_ERROR);
   });
 });
+
+describe('AllExceptionsFilter (logging)', () => {
+  it('logs to req.log when the request has one', () => {
+    const lines: string[] = [];
+    const stream = new Writable({
+      write(chunk: Buffer, _encoding, callback) {
+        lines.push(chunk.toString());
+        callback();
+      },
+    });
+    const log = createHttpLogger(
+      { NODE_ENV: 'test', LOG_LEVEL: 'info' },
+      stream,
+    ).logger;
+    const error = new Error('boom');
+
+    new AllExceptionsFilter().catch(error, httpHost({ log }).host);
+
+    expect(lines).toHaveLength(1);
+    const line = JSON.parse(lines[0]) as Record<string, any>;
+    expect(line).toMatchObject({
+      level: 50,
+      context: 'AllExceptionsFilter',
+      err: { type: 'Error', message: 'boom' },
+    });
+  });
+});
+
+function httpHost(request: object) {
+  const json = vi.fn();
+  const status = vi.fn(() => ({ json }));
+  const host = {
+    switchToHttp: () => ({
+      getRequest: () => request,
+      getResponse: () => ({ status }),
+    }),
+  } as unknown as ArgumentsHost;
+  return { host, status, json };
+}

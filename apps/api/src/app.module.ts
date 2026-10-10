@@ -7,7 +7,11 @@ import { ZodValidationPipe } from 'nestjs-zod';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
 import { validateEnv, type Env } from './config/env.schema.js';
-import { createLoggerParams } from './config/logger.config.js';
+import {
+  createHttpLogger,
+  createLoggerParams,
+  HTTP_LOGGER,
+} from './config/logger.config.js';
 import { RATE_LIMIT } from './config/throttler.config.js';
 import { PrismaModule } from './database/prisma.module.js';
 import { HealthModule } from './health/health.module.js';
@@ -20,12 +24,19 @@ import { HealthModule } from './health/health.module.js';
       validate: validateEnv,
     }),
     LoggerModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService<Env, true>) =>
-        createLoggerParams({
-          NODE_ENV: config.get('NODE_ENV', { infer: true }),
-          LOG_LEVEL: config.get('LOG_LEVEL', { infer: true }),
-        }),
+      providers: [
+        {
+          provide: HTTP_LOGGER,
+          inject: [ConfigService],
+          useFactory: (config: ConfigService<Env, true>) =>
+            createHttpLogger({
+              NODE_ENV: config.get('NODE_ENV', { infer: true }),
+              LOG_LEVEL: config.get('LOG_LEVEL', { infer: true }),
+            }),
+        },
+      ],
+      inject: [HTTP_LOGGER],
+      useFactory: createLoggerParams,
     }),
     ThrottlerModule.forRoot([RATE_LIMIT]),
     PrismaModule,

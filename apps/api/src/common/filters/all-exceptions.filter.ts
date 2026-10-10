@@ -6,7 +6,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { ZodValidationException } from 'nestjs-zod';
 import { ZodError } from 'zod';
 import { Prisma } from '../../generated/prisma/client.js';
@@ -42,17 +42,27 @@ export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost): void {
+    const http = host.switchToHttp();
     const body = toErrorResponse(exception);
 
-    // Passing the Error itself (not message + stack) lets pino serialize it,
-    // including any `cause` chain.
-    if (body.statusCode >= 500) this.logger.error(exception);
+    if (body.statusCode >= 500) {
+      this.logError(exception, http.getRequest<Request>());
+    }
 
-    host
-      .switchToHttp()
-      .getResponse<Response>()
-      .status(body.statusCode)
-      .json(body);
+    http.getResponse<Response>().status(body.statusCode).json(body);
+  }
+
+  // The Error goes under `err` so pino serializes it, `cause` chain included.
+  // req.log is the request's logger, set before body parsing, so parser
+  // errors carry the request ID too; without it (no HTTP logger mounted) the
+  // module logger is used.
+  private logError(exception: unknown, req: Request): void {
+    const log = req.log as Request['log'] | undefined;
+    if (log) {
+      log.error({ context: AllExceptionsFilter.name, err: exception });
+    } else {
+      this.logger.error(exception);
+    }
   }
 }
 

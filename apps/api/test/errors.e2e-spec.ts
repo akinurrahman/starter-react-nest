@@ -6,6 +6,9 @@ import { AppModule } from './../src/app.module.js';
 import { ConflictError, NotFoundError } from './../src/common/errors/index.js';
 import { configureApp } from './../src/config/app.config.js';
 
+const UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
 @Controller('errors-test')
 class ErrorsTestController {
   @Get('not-found')
@@ -97,11 +100,13 @@ describe('Global exception filter (e2e)', () => {
       ['POST', '/health'],
       ['DELETE', '/api/errors-test/conflict'],
     ])('answers %s %s with a JSON 404', async (method, path) => {
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         [method.toLowerCase() as 'get' | 'post' | 'delete'](path)
         .expect(404)
         .expect('Content-Type', /application\/json/)
         .expect(NOT_FOUND);
+
+      expect(res.headers['x-request-id']).toMatch(UUID);
     });
   });
 
@@ -114,29 +119,37 @@ describe('Global exception filter (e2e)', () => {
     }
 
     it('maps a malformed JSON body to BAD_REQUEST', async () => {
-      await post('{"name": ').expect(400).expect({
+      const res = await post('{"name": ').expect(400).expect({
         statusCode: 400,
         code: 'BAD_REQUEST',
         message: 'Bad request',
       });
+
+      expect(res.headers['x-request-id']).toMatch(UUID);
     });
 
     it('maps a body over the limit to PAYLOAD_TOO_LARGE', async () => {
-      await post(JSON.stringify({ blob: 'x'.repeat(200 * 1024) }))
+      const res = await post(JSON.stringify({ blob: 'x'.repeat(200 * 1024) }))
         .expect(413)
         .expect({
           statusCode: 413,
           code: 'PAYLOAD_TOO_LARGE',
           message: 'Payload too large',
         });
+
+      expect(res.headers['x-request-id']).toMatch(UUID);
     });
 
     it('maps an unsupported charset to UNSUPPORTED_MEDIA_TYPE', async () => {
-      await post('{}', 'application/json; charset=bogus').expect(415).expect({
-        statusCode: 415,
-        code: 'UNSUPPORTED_MEDIA_TYPE',
-        message: 'Unsupported media type',
-      });
+      const res = await post('{}', 'application/json; charset=bogus')
+        .expect(415)
+        .expect({
+          statusCode: 415,
+          code: 'UNSUPPORTED_MEDIA_TYPE',
+          message: 'Unsupported media type',
+        });
+
+      expect(res.headers['x-request-id']).toMatch(UUID);
     });
 
     it('also handles parser errors outside the prefix', () => {

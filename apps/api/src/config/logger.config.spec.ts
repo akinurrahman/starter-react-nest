@@ -1,11 +1,16 @@
-import type { IncomingMessage } from 'node:http';
+import { createServer, type IncomingMessage, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { Writable } from 'node:stream';
 import { pino } from 'pino';
 import {
+  createHttpLogger,
   createPinoHttpOptions,
   createPinoOptions,
   isUnloggedRequest,
+  REQUEST_ID_HEADER,
 } from './logger.config.js';
+
+const ENV = { NODE_ENV: 'test', LOG_LEVEL: 'info' } as const;
 
 function memoryStream() {
   const lines: string[] = [];
@@ -21,10 +26,7 @@ function memoryStream() {
 describe('createPinoOptions', () => {
   it('redacts credentials and secrets', () => {
     const { stream, lines } = memoryStream();
-    const logger = pino(
-      createPinoOptions({ NODE_ENV: 'test', LOG_LEVEL: 'info' }),
-      stream,
-    );
+    const logger = pino(createPinoOptions(ENV), stream);
 
     logger.info({
       req: {
@@ -70,10 +72,7 @@ describe('isUnloggedRequest', () => {
   });
 
   it('is wired into pino-http autoLogging', () => {
-    const { autoLogging } = createPinoHttpOptions({
-      NODE_ENV: 'test',
-      LOG_LEVEL: 'info',
-    });
+    const { autoLogging } = createPinoHttpOptions();
     const ignore =
       typeof autoLogging === 'object' ? autoLogging.ignore : undefined;
 
@@ -81,5 +80,37 @@ describe('isUnloggedRequest', () => {
       true,
     );
     expect(ignore?.({ url: '/healthx' } as IncomingMessage)).toBe(false);
+  });
+});
+
+describe('createHttpLogger', () => {
+  const { stream, lines } = memoryStream();
+  let server: Server;
+  let base: string;
+
+  beforeAll(async () => {
+    const httpLogger = createHttpLogger(ENV, stream);
+    server = createServer((req, res) => {
+      httpLogger(req, res);
+      res.end();
+    });
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    base = `http://localhost:${(server.address() as AddressInfo).port}`;
+  });
+
+  afterAll(async () => {
+    await new Promise((resolve) => server.close(resolve));
+  });
+
+  beforeEach(() => {
+    lines.length = 0;
+  });
+
+  it('sets the request ID header and logs the same ID', async () => {
+    const res = await fetch(`${base}/users`);
+
+    const id = res.headers.get(REQUEST_ID_HEADER);
+    expect(id).toMatch(/^[0-9a-f-]{36}$/);
+    expect((JSON.parse(lines[0]) as Record<string, any>).req.id).toBe(id);
   });
 });

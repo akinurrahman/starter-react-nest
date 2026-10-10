@@ -2,13 +2,19 @@ import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import type { Params } from 'nestjs-pino';
-import type { LoggerOptions } from 'pino';
-import type { Options } from 'pino-http';
+import { pino, type DestinationStream, type LoggerOptions } from 'pino';
+import { pinoHttp, type HttpLogger, type Options } from 'pino-http';
 import type { Env } from './env.schema.js';
 
 export type LoggerEnv = Pick<Env, 'NODE_ENV' | 'LOG_LEVEL'>;
 
 export const REQUEST_ID_HEADER = 'x-request-id';
+
+// The app's one pino-http middleware. configureApp mounts it ahead of every
+// other middleware, so requests that fail in body parsing or the docs' basic
+// auth are logged and get a request ID too; nestjs-pino reuses its logger
+// instead of mounting its own after body parsing.
+export const HTTP_LOGGER = Symbol('HTTP_LOGGER');
 
 const VALID_REQUEST_ID = /^[A-Za-z0-9_-]{1,64}$/;
 
@@ -51,9 +57,8 @@ export function isUnloggedRequest(url: string | undefined): boolean {
   return url !== undefined && UNLOGGED_PATHS.has(url.split('?', 1)[0]);
 }
 
-export function createPinoHttpOptions(env: LoggerEnv): Options {
+export function createPinoHttpOptions(): Options {
   return {
-    ...createPinoOptions(env),
     autoLogging: { ignore: (req) => isUnloggedRequest(req.url) },
     genReqId: (req: IncomingMessage, res: ServerResponse) => {
       const id = resolveRequestId(req.headers[REQUEST_ID_HEADER]);
@@ -77,6 +82,21 @@ export function createPinoHttpOptions(env: LoggerEnv): Options {
   };
 }
 
-export function createLoggerParams(env: LoggerEnv): Params {
-  return { pinoHttp: createPinoHttpOptions(env) };
+// `destination` is for tests; the default is stdout.
+export function createHttpLogger(
+  env: LoggerEnv,
+  destination?: DestinationStream,
+): HttpLogger {
+  return pinoHttp({
+    ...createPinoHttpOptions(),
+    logger: pino(createPinoOptions(env), destination),
+  });
+}
+
+export function createLoggerParams(httpLogger: HttpLogger): Params {
+  return {
+    // Not wrapped again, so the root logger keeps httpLogger's serializers.
+    pinoHttp: { logger: httpLogger.logger, wrapSerializers: false },
+    useExisting: true,
+  };
 }

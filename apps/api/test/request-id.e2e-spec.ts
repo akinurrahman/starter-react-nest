@@ -64,7 +64,7 @@ describe('Request ID (e2e)', () => {
 
   it('sets the header on a 404 error response', async () => {
     const res = await request(app.getHttpServer())
-      .get('/api/does-not-exist')
+      .get('/does-not-exist')
       .expect(404);
 
     expect(res.headers['x-request-id']).toMatch(UUID);
