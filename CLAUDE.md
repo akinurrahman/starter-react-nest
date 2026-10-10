@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Monorepo starter template: NestJS API now, React web app and shared package coming.
+Monorepo starter template: NestJS API and shared package now, React web app coming.
 Every rule here is decided. If something seems wrong, ask before working around it.
 
 ## Stack
@@ -17,7 +17,8 @@ Node 24, pnpm 10.18, Turborepo 2.11, TypeScript 6, NestJS 12 (ESM), Prisma 7.10 
 
 ## Commands
 
-Run from the repo root. One app only: `pnpm --filter @starter/api <script>`.
+Run from the repo root. One package only: `pnpm --filter @starter/api <script>`
+(or `@starter/shared`).
 
 | Task | Command |
 |---|---|
@@ -59,8 +60,8 @@ The dev shell may be PowerShell on Windows. Prefer commands that work in both.
 - `src/common/errors` imports nothing from Nest.
 - Controllers return plain values. Never write `{ data }` by hand, the interceptor wraps.
   Paginated lists return `paginate(items, total, query, summary?)` and take `PaginationQueryDto`.
-- DTOs: a Zod schema plus `class XDto extends createZodDto(XSchema) {}`. Schemas move to
-  `packages/shared` once it exists.
+- DTOs: a Zod schema from `@starter/shared` plus `class XDto extends createZodDto(XSchema) {}`
+  in the api.
 - Document every endpoint: `ApiDataResponse`, `ApiPaginatedResponse`, `ApiErrorResponses`.
 - New routes land under `/api` automatically. Only probes are unprefixed and unthrottled.
 - `configureApp` is the only app setup. `main.ts` and every e2e spec use it. Nothing
@@ -69,6 +70,22 @@ The dev shell may be PowerShell on Windows. Prefer commands that work in both.
   ConfigService, not `process.env`.
 - Never log request bodies or user data. Redaction is a safety net, not permission.
   Prisma error messages are only logged in development.
+
+## packages/shared (@starter/shared)
+
+Code both api and web import. Consumed as built `dist` through package `exports`, not
+source: Turbo builds it first (`^build` on build, dev, typecheck, test). If an import
+fails outside Turbo, run `pnpm --filter @starter/shared build`.
+
+- Goes in: request schemas, response types (`ApiResponse`, `PaginatedResponse`), error
+  and pagination schemas, enums, constants.
+- Stays in api: `createZodDto` classes, `paginate()` / `PaginatedResult`, the env schema,
+  anything touching Nest, Prisma or Express.
+- Imports only `zod` (peer dependency, same exact version as the api's, one copy in the
+  install so `instanceof ZodError` holds). No Nest, Prisma, React or Node APIs.
+- ESM, `.js` on relative imports. Everything public goes through `src/index.ts`.
+  Consumers import `@starter/shared`, never deep paths.
+- Schema tests live here as `*.spec.ts` next to the schema.
 
 ## Database
 
