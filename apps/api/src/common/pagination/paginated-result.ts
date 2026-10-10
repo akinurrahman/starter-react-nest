@@ -1,9 +1,9 @@
-import type { Pagination } from './pagination-meta.js';
+import type { PaginationMeta } from '@starter/shared';
 
 export class PaginatedResult<T, S = undefined> {
   constructor(
     readonly items: T[],
-    readonly pagination: Pagination,
+    readonly pagination: PaginationMeta,
     readonly summary?: S,
   ) {}
 }

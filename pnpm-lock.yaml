@@ -38,6 +38,9 @@ importers:
       '@prisma/client':
         specifier: 7.10.0
         version: 7.10.0(prisma@7.10.0(@types/react@19.3.0)(magicast@0.5.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3))(typescript@6.0.3)
+      '@starter/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       dotenv:
         specifier: 18.0.6
         version: 18.0.6
@@ -111,6 +114,24 @@ importers:
       vitest:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.19.1)(@vitest/coverage-v8@4.1.11)(vite@8.3.4(@types/node@24.19.1)(jiti@2.7.0))
+
+  packages/shared:
+    devDependencies:
+      oxlint:
+        specifier: 1.87.0
+        version: 1.87.0(oxlint-tsgolint@7.0.2003)
+      oxlint-tsgolint:
+        specifier: 7.0.2003
+        version: 7.0.2003
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 4.1.11
+        version: 4.1.11(@types/node@24.19.1)(@vitest/coverage-v8@4.1.11)(vite@8.3.4(@types/node@24.19.1)(jiti@2.7.0))
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
 
 packages:
 

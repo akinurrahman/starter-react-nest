@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+import type { ErrorResponse } from '@starter/shared';
 import type { Request, Response } from 'express';
 import { ZodValidationException } from 'nestjs-zod';
 import { ZodError } from 'zod';
@@ -18,7 +19,6 @@ import {
   NotFoundError,
   TooManyRequestsError,
   UnauthorizedError,
-  type ErrorResponse,
 } from '../errors/index.js';
 
 const INTERNAL_ERROR: ErrorResponse = {

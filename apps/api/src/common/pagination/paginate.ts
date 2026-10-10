@@ -1,5 +1,5 @@
+import type { PaginationQuery } from '@starter/shared';
 import { PaginatedResult } from './paginated-result.js';
-import type { PaginationQuery } from './pagination-query.js';
 
 // The only place pagination math happens. A page past the last one is not an
 // error: it returns the (empty) items with the real totals.

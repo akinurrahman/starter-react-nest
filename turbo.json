@@ -11,12 +11,12 @@
       "outputs": ["dist/**"]
     },
     "dev": {
-      "dependsOn": ["db:generate"],
+      "dependsOn": ["^build", "db:generate"],
       "cache": false,
       "persistent": true
     },
     "lint": {
-      "dependsOn": ["db:generate"]
+      "dependsOn": ["^build", "db:generate"]
     },
     "typecheck": {
       "dependsOn": ["^build", "db:generate"]

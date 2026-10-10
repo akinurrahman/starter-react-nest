@@ -1,4 +1,4 @@
-import type { FieldError } from './error-response.js';
+import type { FieldError } from '@starter/shared';
 
 export class AppError extends Error {
   constructor(
