@@ -252,7 +252,13 @@ describe('SWAGGER_ENABLED', () => {
   });
 
   it('defaults to false in production', () => {
-    expect(validateEnv({ ...base, NODE_ENV: 'production' })).toMatchObject({
+    expect(
+      validateEnv({
+        ...base,
+        NODE_ENV: 'production',
+        CORS_ORIGINS: 'https://app.example.com',
+      }),
+    ).toMatchObject({
       SWAGGER_ENABLED: false,
     });
   });
