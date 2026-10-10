@@ -46,22 +46,30 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const body = toErrorResponse(exception);
 
     if (body.statusCode >= 500) {
-      this.logError(exception, http.getRequest<Request>());
+      this.logError(exception, body, http.getRequest<Request>());
     }
 
     http.getResponse<Response>().status(body.statusCode).json(body);
   }
 
   // The Error goes under `err` so pino serializes it, `cause` chain included.
-  // req.log is the request's logger, set before body parsing, so parser
-  // errors carry the request ID too; without it (no HTTP logger mounted) the
-  // module logger is used.
-  private logError(exception: unknown, req: Request): void {
+  // The message is the public one: pino would otherwise copy the raw error
+  // message, which the serializer cannot scrub. req.log is the request's
+  // logger, set before body parsing, so parser errors carry the request ID
+  // too; without it (no HTTP logger mounted) the module logger is used.
+  private logError(
+    exception: unknown,
+    body: ErrorResponse,
+    req: Request,
+  ): void {
     const log = req.log as Request['log'] | undefined;
     if (log) {
-      log.error({ context: AllExceptionsFilter.name, err: exception });
+      log.error(
+        { context: AllExceptionsFilter.name, err: exception },
+        body.message,
+      );
     } else {
-      this.logger.error(exception);
+      this.logger.error({ err: exception }, body.message);
     }
   }
 }

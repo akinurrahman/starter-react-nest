@@ -5,6 +5,7 @@ import type { Params } from 'nestjs-pino';
 import { pino, type DestinationStream, type LoggerOptions } from 'pino';
 import { pinoHttp, type HttpLogger, type Options } from 'pino-http';
 import type { Env } from './env.schema.js';
+import { createErrorSerializer } from './error-serializer.js';
 
 export type LoggerEnv = Pick<Env, 'NODE_ENV' | 'LOG_LEVEL'>;
 
@@ -28,9 +29,21 @@ export const REDACT_PATHS = [
   'req.headers.cookie',
   'res.headers["set-cookie"]',
   'password',
+  'passwordHash',
   'token',
   'secret',
+  // One level down, e.g. { user: { password } }. Deeper is not matched.
+  '*.password',
+  '*.passwordHash',
+  '*.token',
+  '*.secret',
 ];
+
+// Prisma query errors can carry user data, so their messages are logged in
+// development only.
+function errorSerializer(env: LoggerEnv) {
+  return createErrorSerializer(env.NODE_ENV !== 'development');
+}
 
 // Base pino options, kept apart from the HTTP ones so redaction can be tested
 // on a plain pino instance.
@@ -38,6 +51,7 @@ export function createPinoOptions(env: LoggerEnv): LoggerOptions {
   return {
     level: env.LOG_LEVEL,
     redact: { paths: REDACT_PATHS, censor: '[REDACTED]' },
+    serializers: { err: errorSerializer(env) },
     ...(env.NODE_ENV === 'development' && {
       transport: { target: PRETTY_TRANSPORT },
     }),
@@ -57,7 +71,7 @@ export function isUnloggedRequest(url: string | undefined): boolean {
   return url !== undefined && UNLOGGED_PATHS.has(url.split('?', 1)[0]);
 }
 
-export function createPinoHttpOptions(): Options {
+export function createPinoHttpOptions(env: LoggerEnv): Options {
   return {
     autoLogging: { ignore: (req) => isUnloggedRequest(req.url) },
     genReqId: (req: IncomingMessage, res: ServerResponse) => {
@@ -70,7 +84,8 @@ export function createPinoHttpOptions(): Options {
       if (res.statusCode >= 400) return 'warn';
       return 'info';
     },
-    // pino-http wraps these, so they receive the already-serialized req/res.
+    // pino-http wraps these, so they receive the already-serialized req/res/err.
+    // `err` is repeated here because pino-http replaces the logger's own.
     serializers: {
       req: (req: { id: unknown; method: string; url: string }) => ({
         id: req.id,
@@ -78,6 +93,7 @@ export function createPinoHttpOptions(): Options {
         url: req.url,
       }),
       res: (res: { statusCode: number }) => ({ statusCode: res.statusCode }),
+      err: errorSerializer(env),
     },
   };
 }
@@ -88,7 +104,7 @@ export function createHttpLogger(
   destination?: DestinationStream,
 ): HttpLogger {
   return pinoHttp({
-    ...createPinoHttpOptions(),
+    ...createPinoHttpOptions(env),
     logger: pino(createPinoOptions(env), destination),
   });
 }

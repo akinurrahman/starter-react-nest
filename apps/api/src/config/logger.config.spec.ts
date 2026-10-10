@@ -33,6 +33,7 @@ describe('createPinoOptions', () => {
         headers: { authorization: 'Bearer abc', cookie: 'sid=abc' },
       },
       password: 'hunter2',
+      passwordHash: 'hash',
       token: 'tok',
       secret: 'shh',
       email: 'ada@example.com',
@@ -43,10 +44,36 @@ describe('createPinoOptions', () => {
     expect(line.req.headers.authorization).toBe('[REDACTED]');
     expect(line.req.headers.cookie).toBe('[REDACTED]');
     expect(line.password).toBe('[REDACTED]');
+    expect(line.passwordHash).toBe('[REDACTED]');
     expect(line.token).toBe('[REDACTED]');
     expect(line.secret).toBe('[REDACTED]');
     expect(line.email).toBe('ada@example.com');
     expect(lines[0]).not.toMatch(/Bearer abc|sid=abc|hunter2/);
+  });
+
+  it('redacts secrets one level down', () => {
+    const { stream, lines } = memoryStream();
+    const logger = pino(createPinoOptions(ENV), stream);
+
+    logger.info({
+      user: {
+        email: 'ada@example.com',
+        password: 'hunter2',
+        passwordHash: 'hash-value',
+      },
+      session: { token: 'tok-value', secret: 'shh-value' },
+    });
+
+    const line = JSON.parse(lines[0]) as Record<string, any>;
+    expect(line.user).toEqual({
+      email: 'ada@example.com',
+      password: '[REDACTED]',
+      passwordHash: '[REDACTED]',
+    });
+    expect(line.session).toEqual({
+      token: '[REDACTED]',
+      secret: '[REDACTED]',
+    });
   });
 });
 
@@ -72,7 +99,7 @@ describe('isUnloggedRequest', () => {
   });
 
   it('is wired into pino-http autoLogging', () => {
-    const { autoLogging } = createPinoHttpOptions();
+    const { autoLogging } = createPinoHttpOptions(ENV);
     const ignore =
       typeof autoLogging === 'object' ? autoLogging.ignore : undefined;
 

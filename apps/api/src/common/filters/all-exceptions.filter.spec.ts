@@ -94,7 +94,10 @@ describe('AllExceptionsFilter (ServiceUnavailableError)', () => {
     expect(status).toHaveBeenCalledWith(503);
     expect(json).toHaveBeenCalledWith(SERVICE_UNAVAILABLE);
     expect(logError).toHaveBeenCalledTimes(1);
-    expect(logError).toHaveBeenCalledWith(error);
+    expect(logError).toHaveBeenCalledWith(
+      { err: error },
+      'Service unavailable',
+    );
     expect(error.cause).toBe(cause);
   });
 });
@@ -130,7 +133,7 @@ describe('toErrorResponse (http-errors from Express middleware)', () => {
 });
 
 describe('AllExceptionsFilter (logging)', () => {
-  it('logs to req.log when the request has one', () => {
+  it('logs to req.log without query data or the raw message', () => {
     const lines: string[] = [];
     const stream = new Writable({
       write(chunk: Buffer, _encoding, callback) {
@@ -142,7 +145,10 @@ describe('AllExceptionsFilter (logging)', () => {
       { NODE_ENV: 'test', LOG_LEVEL: 'info' },
       stream,
     ).logger;
-    const error = new Error('boom');
+    const error = new Prisma.PrismaClientValidationError(
+      'Invalid `prisma.user.create()` invocation: { email: "ada@example.com" }',
+      { clientVersion: Prisma.prismaVersion.client },
+    );
 
     new AllExceptionsFilter().catch(error, httpHost({ log }).host);
 
@@ -151,8 +157,10 @@ describe('AllExceptionsFilter (logging)', () => {
     expect(line).toMatchObject({
       level: 50,
       context: 'AllExceptionsFilter',
-      err: { type: 'Error', message: 'boom' },
+      msg: 'Internal server error',
+      err: { type: 'PrismaClientValidationError' },
     });
+    expect(lines[0]).not.toContain('ada@example.com');
   });
 });
 
