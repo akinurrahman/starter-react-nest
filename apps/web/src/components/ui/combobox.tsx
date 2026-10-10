@@ -36,6 +36,66 @@ function ComboboxTrigger({
   );
 }
 
+// A select-style trigger for pickers whose search box lives in the popup.
+function ComboboxButtonTrigger({
+  className,
+  children,
+  ...props
+}: ComboboxPrimitive.Trigger.Props) {
+  return (
+    <ComboboxPrimitive.Trigger
+      data-slot="combobox-button-trigger"
+      className={cn(
+        'flex h-10 w-full items-center justify-between gap-1.5 rounded-lg border border-input bg-transparent py-2 pr-2 pl-2.5 text-left text-sm transition-colors outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 sm:h-9 dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0',
+        className,
+      )}
+      {...props}
+    >
+      {children}
+      <ChevronDownIcon className="pointer-events-none size-4 text-muted-foreground" />
+    </ComboboxPrimitive.Trigger>
+  );
+}
+
+function ComboboxTriggerText({
+  className,
+  placeholder,
+  ...props
+}: React.ComponentProps<'span'> & { placeholder?: boolean }) {
+  return (
+    <span
+      data-slot="combobox-trigger-text"
+      className={cn(
+        'truncate',
+        placeholder && 'text-muted-foreground',
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+function ComboboxSearch({
+  className,
+  ...props
+}: ComboboxPrimitive.Input.Props) {
+  return (
+    <div
+      data-slot="combobox-search"
+      className="flex shrink-0 items-center border-b border-border px-2.5"
+    >
+      <ComboboxPrimitive.Input
+        data-slot="combobox-search-input"
+        className={cn(
+          'h-10 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground sm:h-9',
+          className,
+        )}
+        {...props}
+      />
+    </div>
+  );
+}
+
 function ComboboxClear({ className, ...props }: ComboboxPrimitive.Clear.Props) {
   return (
     <ComboboxPrimitive.Clear
@@ -202,6 +262,22 @@ function ComboboxEmpty({ className, ...props }: ComboboxPrimitive.Empty.Props) {
   );
 }
 
+function ComboboxStatus({
+  className,
+  ...props
+}: ComboboxPrimitive.Status.Props) {
+  return (
+    <ComboboxPrimitive.Status
+      data-slot="combobox-status"
+      className={cn(
+        'flex items-center justify-center py-2 text-sm text-muted-foreground empty:p-0',
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
 function ComboboxSeparator({
   className,
   ...props
@@ -295,6 +371,10 @@ export {
   ComboboxChip,
   ComboboxChipsInput,
   ComboboxTrigger,
+  ComboboxButtonTrigger,
+  ComboboxTriggerText,
+  ComboboxSearch,
+  ComboboxStatus,
   ComboboxValue,
   useComboboxAnchor,
 };
