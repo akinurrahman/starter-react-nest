@@ -36,8 +36,17 @@ describe('toMinorUnits', () => {
     expect(toMinorUnits(1234, 'JPY')).toBe(1234);
   });
 
+  it('rounds negative halves away from zero', () => {
+    expect(toMinorUnits(-1.005)).toBe(-101);
+  });
+
+  it('never returns negative zero', () => {
+    expect(toMinorUnits(-0.001)).toBe(0);
+  });
+
   it('uses three places for KWD', () => {
     expect(toMinorUnits(1.2345, 'KWD')).toBe(1235);
+    expect(toMinorUnits(-1.2345, 'KWD')).toBe(-1235);
   });
 
   it('handles values already in exponent form', () => {

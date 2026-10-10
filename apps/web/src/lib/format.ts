@@ -28,7 +28,16 @@ export function toMinorUnits(
 ): number {
   const digits = minorDigits(currency);
   const shifted = Number(`${major}e${digits}`);
-  return Math.round(Number.isNaN(shifted) ? major * 10 ** digits : shifted);
+  return roundHalfAwayFromZero(
+    Number.isNaN(shifted) ? major * 10 ** digits : shifted,
+  );
+}
+
+// Math.round sends halves up, so -100.5 would become -100 while 100.5
+// becomes 101. Money rounds the magnitude, then keeps the sign.
+function roundHalfAwayFromZero(value: number): number {
+  const rounded = Math.round(Math.abs(value));
+  return value < 0 && rounded !== 0 ? -rounded : rounded;
 }
 
 export function formatNumber(
