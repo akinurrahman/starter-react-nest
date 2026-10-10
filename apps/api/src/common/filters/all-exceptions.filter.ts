@@ -16,6 +16,7 @@ import {
   ConflictError,
   ForbiddenError,
   NotFoundError,
+  TooManyRequestsError,
   UnauthorizedError,
   type ErrorResponse,
 } from '../errors/index.js';
@@ -32,6 +33,8 @@ const DEFAULT_ERRORS: Record<number, () => AppError> = {
   403: () => new ForbiddenError(),
   404: () => new NotFoundError(),
   409: () => new ConflictError(),
+  // ThrottlerException lands here; the guard has already set Retry-After.
+  429: () => new TooManyRequestsError(),
 };
 
 @Catch()

@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { ApiDataResponse, ApiErrorResponses } from '../common/swagger/index.js';
 import {
   HealthDto,
@@ -9,7 +10,9 @@ import {
 } from './health.dto.js';
 import { HealthService } from './health.service.js';
 
+// Probes poll on a fixed schedule; throttling them could fail a healthy pod.
 @ApiTags('health')
+@SkipThrottle()
 @Controller('health')
 export class HealthController {
   constructor(private readonly health: HealthService) {}

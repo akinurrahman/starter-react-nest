@@ -30,6 +30,15 @@ export class ConflictError extends AppError {
   }
 }
 
+export class TooManyRequestsError extends AppError {
+  constructor(
+    code = 'TOO_MANY_REQUESTS',
+    message = 'Too many requests, try again later',
+  ) {
+    super(429, code, message);
+  }
+}
+
 // `cause` is logged by AllExceptionsFilter but never sent to the client.
 export class ServiceUnavailableError extends AppError {
   constructor(

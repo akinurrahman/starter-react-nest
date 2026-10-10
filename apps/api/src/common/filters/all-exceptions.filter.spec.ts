@@ -1,4 +1,5 @@
 import { type ArgumentsHost, Logger } from '@nestjs/common';
+import { ThrottlerException } from '@nestjs/throttler';
 import { Prisma } from '../../generated/prisma/client.js';
 import { ServiceUnavailableError } from '../errors/index.js';
 import {
@@ -36,6 +37,16 @@ describe('toErrorResponse (Prisma)', () => {
       statusCode: 500,
       code: 'INTERNAL_ERROR',
       message: 'Internal server error',
+    });
+  });
+});
+
+describe('toErrorResponse (ThrottlerException)', () => {
+  it('maps to 429 TOO_MANY_REQUESTS without the library message', () => {
+    expect(toErrorResponse(new ThrottlerException())).toEqual({
+      statusCode: 429,
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many requests, try again later',
     });
   });
 });
