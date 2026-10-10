@@ -137,7 +137,7 @@ starter-react-nest/
 - [x] NestJS API on ESM with Vitest
 - [x] Prisma 7 and Postgres in Docker
 - [x] Validated environment config
-- [ ] Request validation, error handling, logging, Swagger, health check
+- [x] Request validation, error handling, logging, Swagger, health check
 - [ ] Shared package for schemas and types
 - [ ] React web app
 - [ ] Auth and the users module
