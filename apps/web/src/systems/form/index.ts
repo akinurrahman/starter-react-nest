@@ -1,5 +1,7 @@
 export { Form, FormError } from './form';
 export type { FormInstance, FormSchema } from './form';
+export { FormActions } from './form-actions';
+export { FormSheet } from './form-sheet';
 export type { Option, OptionsFn } from './types';
 
 export { ChoiceField } from './fields/choice-field';
