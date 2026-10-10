@@ -68,7 +68,12 @@ export function resolveRequestId(incoming: unknown): string {
 const UNLOGGED_PATHS = new Set(['/health', '/health/ready']);
 
 export function isUnloggedRequest(url: string | undefined): boolean {
-  return url !== undefined && UNLOGGED_PATHS.has(url.split('?', 1)[0]);
+  return url !== undefined && UNLOGGED_PATHS.has(stripQuery(url));
+}
+
+// Query strings can carry tokens, so only the path is logged.
+export function stripQuery(url: string): string {
+  return url.split('?', 1)[0];
 }
 
 export function createPinoHttpOptions(env: LoggerEnv): Options {
@@ -90,7 +95,7 @@ export function createPinoHttpOptions(env: LoggerEnv): Options {
       req: (req: { id: unknown; method: string; url: string }) => ({
         id: req.id,
         method: req.method,
-        url: req.url,
+        url: stripQuery(req.url),
       }),
       res: (res: { statusCode: number }) => ({ statusCode: res.statusCode }),
       err: errorSerializer(env),

@@ -133,6 +133,15 @@ describe('createHttpLogger', () => {
     lines.length = 0;
   });
 
+  it('logs the path without the query string', async () => {
+    await fetch(`${base}/users/reset?token=s3cret&email=ada@example.com`);
+
+    expect(lines).toHaveLength(1);
+    const line = JSON.parse(lines[0]) as Record<string, any>;
+    expect(line.req.url).toBe('/users/reset');
+    expect(lines[0]).not.toMatch(/s3cret|ada@example\.com|\?/);
+  });
+
   it('sets the request ID header and logs the same ID', async () => {
     const res = await fetch(`${base}/users`);
 
