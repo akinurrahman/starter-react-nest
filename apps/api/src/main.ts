@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module.js';
 import type { Env } from './config/env.schema.js';
+import { configureHttp } from './config/http.config.js';
 import { setupSwagger } from './config/swagger.config.js';
 
 async function bootstrap() {
@@ -10,6 +11,7 @@ async function bootstrap() {
   app.useLogger(app.get(Logger));
   const config = app.get(ConfigService<Env, true>);
   app.enableShutdownHooks();
+  configureHttp(app);
   setupSwagger(app);
   await app.listen(config.get('PORT', { infer: true }));
 }
