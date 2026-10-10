@@ -1,0 +1,134 @@
+import { useState } from 'react';
+import { X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { useCascade } from '../hooks/use-cascade';
+import { gatedText } from '../lib/cascade';
+import type { BaseFieldProps } from '../types';
+import { FieldShell } from './field-shell';
+
+export type TagsFieldProps = BaseFieldProps & {
+  // Stops accepting entries at the schema's limit, which beats letting
+  // someone type one more and then rejecting it.
+  maxItems?: number;
+};
+
+/**
+ * A free-text list, for an API that models one row as several names, where a
+ * plain text field would have to invent a separator and a parser.
+ */
+export function TagsField({
+  name,
+  label,
+  hideLabel,
+  description,
+  placeholder = 'Type and press Enter',
+  required,
+  disabled,
+  className,
+  dependsOn,
+  alwaysVisible,
+  maxItems,
+}: TagsFieldProps) {
+  const [draft, setDraft] = useState('');
+  const { gated, dependsOnList } = useCascade({
+    name,
+    dependsOn,
+    emptyValue: [],
+  });
+  const isDisabled = disabled || gated;
+
+  return (
+    <FieldShell<string[]>
+      name={name}
+      label={label}
+      hideLabel={hideLabel}
+      description={description}
+      required={required}
+      className={className}
+      hidden={gated && !alwaysVisible}
+    >
+      {(control) => {
+        const items = control.value ?? [];
+        const isFull = maxItems !== undefined && items.length >= maxItems;
+
+        const commit = () => {
+          const entry = draft.trim();
+          // A duplicate is dropped quietly, the person can see it is there.
+          if (!entry || isFull || items.includes(entry)) return;
+          control.onChange([...items, entry]);
+          setDraft('');
+        };
+
+        return (
+          <div className="grid gap-2">
+            <Input
+              id={control.id}
+              ref={control.ref}
+              value={draft}
+              // Read-only rather than disabled when full: the input keeps
+              // focus and still hears Backspace, so the last tag can go.
+              readOnly={isFull}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ',') {
+                  event.preventDefault();
+                  commit();
+                  return;
+                }
+                if (event.key === 'Backspace' && !draft && items.length) {
+                  control.onChange(items.slice(0, -1));
+                }
+              }}
+              // Leaving with text still in the box would otherwise throw it
+              // away without saying so.
+              onBlur={() => {
+                commit();
+                control.onBlur();
+              }}
+              placeholder={
+                gated
+                  ? gatedText(dependsOnList)
+                  : isFull
+                    ? `Limit of ${maxItems} reached`
+                    : placeholder
+              }
+              disabled={isDisabled}
+              aria-invalid={control.invalid}
+              aria-required={control.required || undefined}
+              aria-describedby={control.describedBy}
+            />
+
+            {items.length ? (
+              <ul className="flex flex-wrap gap-1.5">
+                {items.map((entry) => (
+                  <li key={entry}>
+                    <Badge
+                      variant="secondary"
+                      className="h-6 gap-1 pr-0.5 pl-2.5"
+                    >
+                      {entry}
+                      <button
+                        type="button"
+                        aria-label={`Remove ${entry}`}
+                        disabled={isDisabled}
+                        onClick={() =>
+                          control.onChange(
+                            items.filter((item) => item !== entry),
+                          )
+                        }
+                        className="flex size-5 items-center justify-center rounded-full text-muted-foreground transition-colors outline-none hover:bg-destructive/10 hover:text-destructive focus-visible:ring-3 focus-visible:ring-ring/50"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        );
+      }}
+    </FieldShell>
+  );
+}
