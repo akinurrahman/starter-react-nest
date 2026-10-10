@@ -2,7 +2,14 @@ export { Form, FormError } from './form';
 export type { FormInstance, FormSchema } from './form';
 export { FormActions } from './form-actions';
 export { FormSheet } from './form-sheet';
-export type { Option, OptionsFn } from './types';
+export { fromPaginated } from './lib/from-paginated';
+export type {
+  AsyncOptionsArgs,
+  AsyncOptionsPage,
+  AsyncOptionsSource,
+  Option,
+  OptionsFn,
+} from './types';
 
 export { ChoiceField } from './fields/choice-field';
 export type { ChoiceOption } from './fields/choice-field';
