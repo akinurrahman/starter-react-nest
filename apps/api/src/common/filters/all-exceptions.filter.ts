@@ -6,7 +6,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import type { ErrorResponse } from '@starter/shared';
+import { ERROR_CODES, type ErrorResponse } from '@starter/shared';
 import type { Request, Response } from 'express';
 import { ZodValidationException } from 'nestjs-zod';
 import { ZodError } from 'zod';
@@ -23,7 +23,7 @@ import {
 
 const INTERNAL_ERROR: ErrorResponse = {
   statusCode: 500,
-  code: 'INTERNAL_ERROR',
+  code: ERROR_CODES.INTERNAL_ERROR,
   message: 'Internal server error',
 };
 
@@ -89,7 +89,7 @@ export function toErrorResponse(exception: unknown): ErrorResponse {
     const zodError = exception.getZodError();
     return {
       statusCode: 400,
-      code: 'VALIDATION_FAILED',
+      code: ERROR_CODES.VALIDATION_FAILED,
       message: 'Validation failed',
       errors:
         zodError instanceof ZodError
@@ -107,13 +107,13 @@ export function toErrorResponse(exception: unknown): ErrorResponse {
       case 'P2002':
         return {
           statusCode: 409,
-          code: 'CONFLICT',
+          code: ERROR_CODES.CONFLICT,
           message: 'Resource already exists',
         };
       case 'P2025':
         return {
           statusCode: 404,
-          code: 'NOT_FOUND',
+          code: ERROR_CODES.NOT_FOUND,
           message: 'Resource not found',
         };
       default:

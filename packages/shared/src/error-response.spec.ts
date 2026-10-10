@@ -20,6 +20,11 @@ describe('errorResponseSchema', () => {
     expect(errorResponseSchema.parse(withErrors)).toEqual(withErrors);
   });
 
+  it('accepts a code outside ERROR_CODES', () => {
+    const future = { ...body, code: 'SOME_FUTURE_CODE' };
+    expect(errorResponseSchema.parse(future)).toEqual(future);
+  });
+
   it('rejects a non-integer status code', () => {
     expect(
       errorResponseSchema.safeParse({ ...body, statusCode: 400.5 }).success,
