@@ -89,11 +89,20 @@ describe('Global exception filter (e2e)', () => {
     expect(res.text).not.toContain('secret database password');
   });
 
-  it('maps an unknown route to NOT_FOUND', () => {
-    return request(app.getHttpServer())
-      .get('/api/does-not-exist')
-      .expect(404)
-      .expect(NOT_FOUND);
+  describe('unknown routes', () => {
+    it.each([
+      ['GET', '/api/does-not-exist'],
+      ['GET', '/does-not-exist'],
+      ['GET', '/%E0%A4%A'],
+      ['POST', '/health'],
+      ['DELETE', '/api/errors-test/conflict'],
+    ])('answers %s %s with a JSON 404', async (method, path) => {
+      await request(app.getHttpServer())
+        [method.toLowerCase() as 'get' | 'post' | 'delete'](path)
+        .expect(404)
+        .expect('Content-Type', /application\/json/)
+        .expect(NOT_FOUND);
+    });
   });
 
   describe('body parsing', () => {
