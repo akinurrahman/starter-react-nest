@@ -13,5 +13,7 @@ export type {
 
 export { FilterAsyncSelect } from './components/filter-async-select';
 export { FilterBar } from './components/filter-bar';
+export { FilterPopover } from './components/filter-popover';
+export type { FilterPopoverField } from './lib/popover-fields';
 export { FilterSelect } from './components/filter-select';
 export { SearchInput } from './components/search-input';
