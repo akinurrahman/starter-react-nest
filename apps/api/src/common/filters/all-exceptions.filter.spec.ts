@@ -7,6 +7,12 @@ import {
   toErrorResponse,
 } from './all-exceptions.filter.js';
 
+const INTERNAL_ERROR = {
+  statusCode: 500,
+  code: 'INTERNAL_ERROR',
+  message: 'Internal server error',
+};
+
 function prismaError(code: string) {
   return new Prisma.PrismaClientKnownRequestError('internal prisma detail', {
     code,
@@ -92,5 +98,35 @@ describe('AllExceptionsFilter (ServiceUnavailableError)', () => {
     expect(logError).toHaveBeenCalledTimes(1);
     expect(logError).toHaveBeenCalledWith(error);
     expect(error.cause).toBe(cause);
+  });
+});
+
+describe('toErrorResponse (http-errors from Express middleware)', () => {
+  function httpError(status: number, expose: boolean) {
+    return Object.assign(new Error('library detail: limit is 102400'), {
+      status,
+      statusCode: status,
+      expose,
+    });
+  }
+
+  it.each([
+    [413, 'PAYLOAD_TOO_LARGE', 'Payload too large'],
+    [415, 'UNSUPPORTED_MEDIA_TYPE', 'Unsupported media type'],
+    [400, 'BAD_REQUEST', 'Bad request'],
+  ])('maps an exposed %i to %s', (status, code, message) => {
+    expect(toErrorResponse(httpError(status, true))).toEqual({
+      statusCode: status,
+      code,
+      message,
+    });
+  });
+
+  it('keeps an unexposed client error internal', () => {
+    expect(toErrorResponse(httpError(413, false))).toEqual(INTERNAL_ERROR);
+  });
+
+  it('keeps a 5xx internal even when exposed', () => {
+    expect(toErrorResponse(httpError(502, true))).toEqual(INTERNAL_ERROR);
   });
 });

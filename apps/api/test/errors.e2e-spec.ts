@@ -120,5 +120,31 @@ describe('Global exception filter (e2e)', () => {
         message: 'Bad request',
       });
     });
+
+    it('maps a body over the limit to PAYLOAD_TOO_LARGE', async () => {
+      await post(JSON.stringify({ blob: 'x'.repeat(200 * 1024) }))
+        .expect(413)
+        .expect({
+          statusCode: 413,
+          code: 'PAYLOAD_TOO_LARGE',
+          message: 'Payload too large',
+        });
+    });
+
+    it('maps an unsupported charset to UNSUPPORTED_MEDIA_TYPE', async () => {
+      await post('{}', 'application/json; charset=bogus').expect(415).expect({
+        statusCode: 415,
+        code: 'UNSUPPORTED_MEDIA_TYPE',
+        message: 'Unsupported media type',
+      });
+    });
+
+    it('also handles parser errors outside the prefix', () => {
+      return request(app.getHttpServer())
+        .post('/does-not-exist')
+        .set('Content-Type', 'application/json')
+        .send(JSON.stringify({ blob: 'x'.repeat(200 * 1024) }))
+        .expect(413);
+    });
   });
 });

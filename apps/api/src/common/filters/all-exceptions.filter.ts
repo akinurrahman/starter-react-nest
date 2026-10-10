@@ -108,14 +108,37 @@ export function toErrorResponse(exception: unknown): ErrorResponse {
   if (exception instanceof HttpException) {
     const status = exception.getStatus();
     if (status === 500) return INTERNAL_ERROR;
-    return {
-      statusCode: status,
-      code: codeFor(status),
-      message: genericMessage(status),
-    };
+    return genericResponse(status);
   }
 
+  // Express middleware (body-parser: 413, 415, ...) throws http-errors: plain
+  // Errors with a 4xx `status` and `expose: true`. Only the status is used.
+  const clientStatus = clientErrorStatus(exception);
+  if (clientStatus !== undefined) return genericResponse(clientStatus);
+
   return INTERNAL_ERROR;
+}
+
+function clientErrorStatus(exception: unknown): number | undefined {
+  if (!(exception instanceof Error)) return undefined;
+  const { status, expose } = exception as {
+    status?: unknown;
+    expose?: unknown;
+  };
+  return expose === true &&
+    typeof status === 'number' &&
+    status >= 400 &&
+    status < 500
+    ? status
+    : undefined;
+}
+
+function genericResponse(status: number): ErrorResponse {
+  return {
+    statusCode: status,
+    code: codeFor(status),
+    message: genericMessage(status),
+  };
 }
 
 function codeFor(status: number): string {
