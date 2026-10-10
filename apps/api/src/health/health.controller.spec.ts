@@ -1,7 +1,7 @@
-import type { INestApplication } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import type { App } from 'supertest/types.js';
+import { configureApp } from '../config/app.config.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { HealthRepository } from './health.repository.js';
 
@@ -14,7 +14,7 @@ const CAUSE = 'connect ECONNREFUSED 10.0.0.5:5432 user=postgres';
 // is stubbed. PrismaService and HealthRepository are replaced: no database.
 describe('Health endpoints', () => {
   const ping = vi.fn<() => Promise<void>>();
-  let app: INestApplication<App>;
+  let app: NestExpressApplication;
 
   beforeAll(async () => {
     vi.stubEnv('DATABASE_URL', 'postgresql://localhost:5432/unused');
@@ -27,8 +27,10 @@ describe('Health endpoints', () => {
       .useValue({ ping })
       .compile();
 
-    app = moduleRef.createNestApplication({ logger: false });
-    await app.init();
+    app = moduleRef.createNestApplication<NestExpressApplication>({
+      logger: false,
+    });
+    await configureApp(app);
   });
 
   afterAll(async () => {

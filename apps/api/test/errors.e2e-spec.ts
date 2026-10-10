@@ -1,9 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { Body, Controller, Get, INestApplication, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
-import { App } from 'supertest/types.js';
 import { AppModule } from './../src/app.module.js';
 import { ConflictError, NotFoundError } from './../src/common/errors/index.js';
+import { configureApp } from './../src/config/app.config.js';
 
 @Controller('errors-test')
 class ErrorsTestController {
@@ -28,8 +29,14 @@ class ErrorsTestController {
   }
 }
 
+const NOT_FOUND = {
+  statusCode: 404,
+  code: 'NOT_FOUND',
+  message: 'Resource not found',
+};
+
 describe('Global exception filter (e2e)', () => {
-  let app: INestApplication<App>;
+  let app: NestExpressApplication;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -37,13 +44,19 @@ describe('Global exception filter (e2e)', () => {
       controllers: [ErrorsTestController],
     }).compile();
 
-    app = moduleFixture.createNestApplication({ logger: false });
-    await app.init();
+    app = moduleFixture.createNestApplication<NestExpressApplication>({
+      logger: false,
+    });
+    await configureApp(app);
+  });
+
+  afterEach(async () => {
+    await app.close();
   });
 
   it('maps NotFoundError with a custom code', () => {
     return request(app.getHttpServer())
-      .get('/errors-test/not-found')
+      .get('/api/errors-test/not-found')
       .expect(404)
       .expect({
         statusCode: 404,
@@ -54,7 +67,7 @@ describe('Global exception filter (e2e)', () => {
 
   it('maps ConflictError with defaults', () => {
     return request(app.getHttpServer())
-      .get('/errors-test/conflict')
+      .get('/api/errors-test/conflict')
       .expect(409)
       .expect({
         statusCode: 409,
@@ -65,7 +78,7 @@ describe('Global exception filter (e2e)', () => {
 
   it('hides unknown errors behind INTERNAL_ERROR', async () => {
     const res = await request(app.getHttpServer())
-      .get('/errors-test/crash')
+      .get('/api/errors-test/crash')
       .expect(500)
       .expect({
         statusCode: 500,
@@ -78,29 +91,25 @@ describe('Global exception filter (e2e)', () => {
 
   it('maps an unknown route to NOT_FOUND', () => {
     return request(app.getHttpServer())
-      .get('/does-not-exist')
+      .get('/api/does-not-exist')
       .expect(404)
-      .expect({
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Resource not found',
-      });
+      .expect(NOT_FOUND);
   });
 
-  it('maps a malformed JSON body to BAD_REQUEST', () => {
-    return request(app.getHttpServer())
-      .post('/errors-test/echo')
-      .set('Content-Type', 'application/json')
-      .send('{"name": ')
-      .expect(400)
-      .expect({
+  describe('body parsing', () => {
+    function post(body: string, contentType = 'application/json') {
+      return request(app.getHttpServer())
+        .post('/api/errors-test/echo')
+        .set('Content-Type', contentType)
+        .send(body);
+    }
+
+    it('maps a malformed JSON body to BAD_REQUEST', async () => {
+      await post('{"name": ').expect(400).expect({
         statusCode: 400,
         code: 'BAD_REQUEST',
         message: 'Bad request',
       });
-  });
-
-  afterEach(async () => {
-    await app.close();
+    });
   });
 });

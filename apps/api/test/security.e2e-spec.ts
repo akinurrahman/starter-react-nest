@@ -29,8 +29,7 @@ async function createApp(
   for (const [key, value] of Object.entries(env)) vi.stubEnv(key, value);
 
   const { AppModule } = await import('./../src/app.module.js');
-  const { configureHttp } = await import('./../src/config/http.config.js');
-  const { setupSwagger } = await import('./../src/config/swagger.config.js');
+  const { configureApp } = await import('./../src/config/app.config.js');
 
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
@@ -41,9 +40,7 @@ async function createApp(
     .compile();
 
   const app = moduleRef.createNestApplication<NestExpressApplication>();
-  configureHttp(app);
-  setupSwagger(app);
-  await app.init();
+  await configureApp(app);
   return app;
 }
 

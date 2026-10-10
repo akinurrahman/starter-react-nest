@@ -4,9 +4,8 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 import { AppModule } from './../src/app.module.js';
 import { DEFAULT_CORS_ORIGINS } from './../src/config/env.schema.js';
-import { configureHttp } from './../src/config/http.config.js';
+import { configureApp } from './../src/config/app.config.js';
 import {
-  setupSwagger,
   SWAGGER_JSON_PATH,
   SWAGGER_PATH,
 } from './../src/config/swagger.config.js';
@@ -32,10 +31,7 @@ describe('HTTP setup (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication<NestExpressApplication>();
-    // Same order as main.ts.
-    configureHttp(app);
-    setupSwagger(app);
-    await app.init();
+    await configureApp(app);
   });
 
   afterAll(async () => {

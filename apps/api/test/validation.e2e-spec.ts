@@ -1,10 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { Body, Controller, INestApplication, Post } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { createZodDto } from 'nestjs-zod';
 import request from 'supertest';
-import { App } from 'supertest/types.js';
 import { z } from 'zod';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './../src/app.module.js';
+import { configureApp } from './../src/config/app.config.js';
 
 class CreateThingDto extends createZodDto(
   z.object({
@@ -22,7 +23,7 @@ class ValidationTestController {
 }
 
 describe('Global validation (e2e)', () => {
-  let app: INestApplication<App>;
+  let app: NestExpressApplication;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -30,13 +31,13 @@ describe('Global validation (e2e)', () => {
       controllers: [ValidationTestController],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
-    await app.init();
+    app = moduleFixture.createNestApplication<NestExpressApplication>();
+    await configureApp(app);
   });
 
   it('accepts valid input', () => {
     return request(app.getHttpServer())
-      .post('/validation-test')
+      .post('/api/validation-test')
       .send({ name: 'Ada', email: 'ada@example.com' })
       .expect(201)
       .expect({ data: { name: 'Ada', email: 'ada@example.com' } });
@@ -44,7 +45,7 @@ describe('Global validation (e2e)', () => {
 
   it('rejects invalid input with the failing fields', () => {
     return request(app.getHttpServer())
-      .post('/validation-test')
+      .post('/api/validation-test')
       .send({ name: 'A', email: 'not-an-email' })
       .expect(400)
       .expect({
@@ -68,7 +69,7 @@ describe('Global validation (e2e)', () => {
 
   it('strips unknown fields from the body', () => {
     return request(app.getHttpServer())
-      .post('/validation-test')
+      .post('/api/validation-test')
       .send({ name: 'Ada', email: 'ada@example.com', isAdmin: true })
       .expect(201)
       .expect({ data: { name: 'Ada', email: 'ada@example.com' } });

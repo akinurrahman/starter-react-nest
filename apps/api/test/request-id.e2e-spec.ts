@@ -1,22 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
-import { App } from 'supertest/types.js';
 import { AppModule } from './../src/app.module.js';
+import { configureApp } from './../src/config/app.config.js';
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 describe('Request ID (e2e)', () => {
-  let app: INestApplication<App>;
+  let app: NestExpressApplication;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
-    await app.init();
+    app = moduleFixture.createNestApplication<NestExpressApplication>();
+    await configureApp(app);
   });
 
   it('generates a UUID when none is sent', async () => {
@@ -64,7 +64,7 @@ describe('Request ID (e2e)', () => {
 
   it('sets the header on a 404 error response', async () => {
     const res = await request(app.getHttpServer())
-      .get('/does-not-exist')
+      .get('/api/does-not-exist')
       .expect(404);
 
     expect(res.headers['x-request-id']).toMatch(UUID);

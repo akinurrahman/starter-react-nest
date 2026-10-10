@@ -4,13 +4,13 @@ import {
   Delete,
   Get,
   HttpCode,
-  INestApplication,
   Query,
   StreamableFile,
 } from '@nestjs/common';
 import request from 'supertest';
-import { App } from 'supertest/types.js';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './../src/app.module.js';
+import { configureApp } from './../src/config/app.config.js';
 import {
   paginate,
   PaginationQueryDto,
@@ -67,7 +67,7 @@ class ResponseTestController {
 }
 
 describe('Response envelope (e2e)', () => {
-  let app: INestApplication<App>;
+  let app: NestExpressApplication;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -75,27 +75,27 @@ describe('Response envelope (e2e)', () => {
       controllers: [ResponseTestController],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
-    await app.init();
+    app = moduleFixture.createNestApplication<NestExpressApplication>();
+    await configureApp(app);
   });
 
   it('wraps a single object in data', () => {
     return request(app.getHttpServer())
-      .get('/response-test/item')
+      .get('/api/response-test/item')
       .expect(200)
       .expect({ data: { id: 1, name: 'Ada' } });
   });
 
   it('wraps an array in data', () => {
     return request(app.getHttpServer())
-      .get('/response-test/list')
+      .get('/api/response-test/list')
       .expect(200)
       .expect({ data: [{ id: 1 }, { id: 2 }] });
   });
 
   it('paginates a middle page', () => {
     return request(app.getHttpServer())
-      .get('/response-test/paginated?page=2&limit=20')
+      .get('/api/response-test/paginated?page=2&limit=20')
       .expect(200)
       .expect({
         data: pageOf(ALL_ITEMS, 2, 20),
@@ -112,7 +112,7 @@ describe('Response envelope (e2e)', () => {
 
   it('includes the summary when present', () => {
     return request(app.getHttpServer())
-      .get('/response-test/paginated-summary?page=3&limit=20')
+      .get('/api/response-test/paginated-summary?page=3&limit=20')
       .expect(200)
       .expect({
         data: pageOf(ALL_ITEMS, 3, 20),
@@ -130,7 +130,7 @@ describe('Response envelope (e2e)', () => {
 
   it('omits the summary key when absent', async () => {
     const res = await request(app.getHttpServer())
-      .get('/response-test/paginated?page=1&limit=20')
+      .get('/api/response-test/paginated?page=1&limit=20')
       .expect(200);
 
     expect(res.body).not.toHaveProperty('summary');
@@ -138,7 +138,7 @@ describe('Response envelope (e2e)', () => {
 
   it('handles zero results', () => {
     return request(app.getHttpServer())
-      .get('/response-test/empty')
+      .get('/api/response-test/empty')
       .expect(200)
       .expect({
         data: [],
@@ -155,7 +155,7 @@ describe('Response envelope (e2e)', () => {
 
   it('returns empty data with real totals beyond the last page', () => {
     return request(app.getHttpServer())
-      .get('/response-test/paginated?page=5&limit=20')
+      .get('/api/response-test/paginated?page=5&limit=20')
       .expect(200)
       .expect({
         data: [],
@@ -172,7 +172,7 @@ describe('Response envelope (e2e)', () => {
 
   it('applies page 1 and limit 20 by default', () => {
     return request(app.getHttpServer())
-      .get('/response-test/paginated')
+      .get('/api/response-test/paginated')
       .expect(200)
       .expect({
         data: pageOf(ALL_ITEMS, 1, 20),
@@ -189,7 +189,7 @@ describe('Response envelope (e2e)', () => {
 
   it('rejects a limit over 100', () => {
     return request(app.getHttpServer())
-      .get('/response-test/paginated?limit=101')
+      .get('/api/response-test/paginated?limit=101')
       .expect(400)
       .expect({
         statusCode: 400,
@@ -207,7 +207,7 @@ describe('Response envelope (e2e)', () => {
 
   it('sends an empty body for a 204 handler', async () => {
     const res = await request(app.getHttpServer())
-      .delete('/response-test/no-content')
+      .delete('/api/response-test/no-content')
       .expect(204);
 
     expect(res.text).toBe('');
@@ -215,7 +215,7 @@ describe('Response envelope (e2e)', () => {
 
   it('does not wrap undefined from a 200 handler', async () => {
     const res = await request(app.getHttpServer())
-      .get('/response-test/nothing')
+      .get('/api/response-test/nothing')
       .expect(200);
 
     expect(res.text).toBe('');
@@ -223,7 +223,7 @@ describe('Response envelope (e2e)', () => {
 
   it('passes a StreamableFile through untouched', async () => {
     const res = await request(app.getHttpServer())
-      .get('/response-test/file')
+      .get('/api/response-test/file')
       .buffer(true)
       .expect(200);
 
