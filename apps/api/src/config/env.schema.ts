@@ -92,9 +92,10 @@ export type Env = z.infer<typeof envSchema>;
 export function validateEnv(config: Record<string, unknown>): Env {
   const result = envSchema.safeParse(config);
   if (!result.success) {
-    console.error('Invalid environment variables:');
-    console.error(z.prettifyError(result.error));
-    throw new Error('Invalid environment variables');
+    // Thrown rather than printed, so main.ts logs it as one fatal line.
+    throw new Error(
+      `Invalid environment variables:\n${z.prettifyError(result.error)}`,
+    );
   }
   return result.data;
 }

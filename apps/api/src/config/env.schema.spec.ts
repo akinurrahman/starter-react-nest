@@ -1,4 +1,20 @@
-import { envSchema } from './env.schema.js';
+import { envSchema, validateEnv } from './env.schema.js';
+
+describe('validateEnv', () => {
+  it('throws with each failing variable in the message, printing nothing', () => {
+    const consoleError = vi.spyOn(console, 'error');
+
+    const call = () =>
+      validateEnv({ DATABASE_URL: 'mysql://localhost/db', PORT: 'abc' });
+
+    expect(call).toThrow(/^Invalid environment variables:\n/);
+    expect(call).toThrow(/→ at DATABASE_URL/);
+    expect(call).toThrow(/→ at PORT/);
+    expect(consoleError).not.toHaveBeenCalled();
+
+    consoleError.mockRestore();
+  });
+});
 
 const base = { DATABASE_URL: 'postgresql://localhost:5432/unused' };
 
